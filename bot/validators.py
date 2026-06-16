@@ -107,6 +107,97 @@ def validate_quantity(self, quanity,symbol):
     
     return quanity
 
+def validate_price(
+        self,
+        price,
+        symbol,
+        order_type
+    ):
+        """
+        Validate LIMIT order price.
+        """
+
+        if order_type != "LIMIT":
+            return None
+
+        if price is None:
+            raise ValidationError(
+                "LIMIT orders require a price."
+            )
+
+        try:
+            price = Decimal(str(price))
+
+        except InvalidOperation:
+            raise ValidationError(
+                "Price must be numeric."
+            )
+
+        rules = self.symbol_rules[symbol]
+
+        if price < rules["min_price"]:
+            raise ValidationError(
+                f"Price cannot be below "
+                f"{rules['min_price']}."
+            )
+
+        if price > rules["max_price"]:
+            raise ValidationError(
+                f"Price cannot exceed "
+                f"{rules['max_price']}."
+            )
+
+        tick_size = rules["tick_size"]
+
+        remainder = price % tick_size
+
+        if remainder != 0:
+            raise ValidationError(
+                f"Price must follow tick size "
+                f"{tick_size}."
+            )
+
+        return price
+
+def validate_order(
+        self,
+        symbol,
+        side,
+        order_type,
+        quantity,
+        price=None
+    ):
+        """
+        Validate an entire order request.
+        """
+
+        symbol = self.validate_symbol(symbol)
+
+        side = self.validate_side(side)
+
+        order_type = self.validate_order_type(
+            order_type
+        )
+
+        quantity = self.validate_quantity(
+            quantity,
+            symbol
+        )
+
+        price = self.validate_price(
+            price,
+            symbol,
+            order_type
+        )
+
+        return {
+            "symbol": symbol,
+            "side": side,
+            "order_type": order_type,
+            "quantity": quantity,
+            "price": price,
+        }
+
 
 
 
